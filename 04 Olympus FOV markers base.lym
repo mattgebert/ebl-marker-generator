@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
+from string import ascii_uppercase
+
+print("-----------------------------------")
+
+## https://www.klayout.de/forum/discussion/1265/pcell-creation-via-python-procedure
+## https://www.klayout.de/forum/discussion/1676/with-python-basic-text-pcell-does-not-show-up-in-layout
+pya.Application.instance().main_window().close_all()
+
+# Get layout view, if no layout create one.
+lv = pya.LayoutView.current()
+if lv is None:
+  layout = pya.Application.instance().main_window().create_layout(1).layout()
+  lv = pya.LayoutView.current()
+
+# Get cell view, if not existing, then create one.
+cv = pya.CellView.active()
+if cv is None or not layout.cells():
+  top = layout.create_cell("TOP")
+  if cv is not None:
+    cv.cell = top
+
+#Set cell view selection
+cv = pya.CellView.active()
+layout = cv.layout()
+layout.dbu = 0.001
+
+# Ensure there is a layer existing
+alg_layer_ind = layout.insert_layer(pya.LayerInfo().new(1,0,"markers"))
+alg_layer = pya.LayerInfo(1,0)
+# Add extra layer for boxing
+box_layer_ind = layout.insert_layer(pya.LayerInfo().new(2,0,"bounding"))
+box_layer = pya.LayerInfo(2,0)
+#box_layer.
+# Put layers in list:
+lv.add_missing_layers()
+lv.layer = alg_layer #select layer
+
+#Writing Layer info
+
+#Create Cell for Alignment markers.
+AM = layout.create_cell("Alignment Markers")
+cv.cell = AM #set to current selection.
+
+# Get TEXT object
+lib=pya.Library.library_by_name("Basic")
+txt=lib.layout().pcell_declaration("TEXT")
+
+
+
+#Specify grid
+rows = 1
+cols = 1
+boundx = 135 #um
+boundy = 100 #um
+box_pad = 5 #um - from boundary to boxes
+box_len = 3 #um
+box_ys = 1 #number of boxes in ydir
+box_xs = 1 #number of boxes in xdir
+
+#calc
+dx2 = 2*box_len #spacing between centre of boxes
+dy2 = 2*box_len #spacing between centre of boxes
+dx = boundx - (box_xs * 2 - 1)*box_len - 2*box_pad #spacing between sets of boxes
+dy = boundy - (box_ys * 2 - 1)*box_len - 2*box_pad #spacing between sets of boxes
+
+
+ix = [(i - 0.5*(box_xs-1))*dx2 for i in range(box_xs)]
+jy = [(j - 0.5*(box_ys-1))*dy2 for j in range(box_ys)]
+
+for row in range(rows):
+  for col in range(cols):
+  
+    ###Setup Params
+    #Centre grid point:
+    x = ((col) * boundx)*1e3
+    y = ((-row) * boundy)*1e3
+
+    #Draw bounding box:
+    AM.shapes(box_layer_ind).insert(pya.Box(-0.5e3*boundx,-0.5e3*boundy,0.5e3*boundx,0.5e3*boundy))
+     
+    # Create BOX Markers
+    for hcorner in [-0.5,0.5]:
+      for vcorner in [-0.5,0.5]:
+        for i in ix:	
+          for j in jy:			
+            xij = x - (hcorner*dx + i)*1e3
+            yij = y - (vcorner*dy + j)*1e3
+            # Get box corner coords
+            x1 = xij - 0.5e3 * box_len
+            x2 = xij + 0.5e3 * box_len
+            y1 = yij - 0.5e3 * box_len
+            y2 = yij + 0.5e3 * box_len
+            # Write box
+            AM.shapes(alg_layer_ind).insert(pya.Box(x1,y1,x2,y2)) #if layer obj.
+
+#Properly fit area
+lv.zoom_fit()    </text>
+</klayout-macro>

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
+import math
+from string import ascii_uppercase
+
+print("-----------------------------------")
+
+#INFO: To be run after using "generate_alignment_marker_base". Requires existance of certain layers/cells.
+
+# Get layout view, if no layout create one.
+lv = pya.LayoutView.current()
+
+# Get cell view, if not existing, then create one.
+cv = pya.CellView.active()
+layout = cv.layout()
+
+#Select "TOP" Cell
+top = layout.cell("TOP")
+AM = layout.cell("Alignment Markers")
+GRD = layout.cell("Grid")
+
+# Ensure there is a layer existing
+layl = []
+layi = []
+
+li = lv.begin_layers()
+while not li.at_end():
+  node = li.current()
+  ly = lv.cellview(node.cellview()) #layout object
+  lj = node.layer_index() #layer index
+  layl += [ly]
+  layi += [lj]
+  li.next()
+
+
+alg_layer_ind = layl[0]
+alg_layer = pya.LayerInfo(1,0)
+box_layer_ind = layl[1]
+box_layer = pya.LayerInfo(2,0)
+txt_layer_ind = layl[2]
+txt_layer = pya.LayerInfo(3,0)
+waf_layer_ind = layout.insert_layer(pya.LayerInfo().new(4,0,"wafer"))
+waf_layer = pya.LayerInfo(4,0)
+
+# Put layers in list:
+lv.add_missing_layers()
+lv.layer = txt_layer #select layer
+
+#Writing Layer info
+
+#Create Cell for Alignment markers.
+cv.cell = top #set to current selection.
+
+# Get TEXT object
+lib=pya.Library.library_by_name("Basic")
+txt=lib.layout().pcell_declaration("TEXT")
+circ=lib.layout().pcell_declaration("CIRCLE")
+
+#Specify grid
+dx = 4500e3 #um spacing between sets of boxes
+dy = 4500e3 #um spacing between sets of boxes
+
+wafer_diameter_in = 4
+in_to_cm = 2.54
+wafer_diameter_um = in_to_cm * wafer_diameter_in * 1e4
+
+rows = math.ceil(wafer_diameter_um * 1e3 / dx) + 1
+cols = math.ceil(wafer_diameter_um * 1e3 / dy) + 1
+
+######## Draw a circle on the box layer.
+cparam = {
+  "layer":waf_layer,
+  "radius": wafer_diameter_um/2.0,
+  "actual_radius": wafer_diameter_um/2.0
+}
+#Generate defaults for all other parameters
+cpv = circ.get_parameters()
+for p in cpv:
+  if not p.name in cparam.keys():
+    param[p.name] = p.default
+#Make Cell
+cpvar = layout.add_pcell_variant(lib, circ.id(), cparam)
+ct = pya.Trans(pya.Trans.R0,0,0)
+#instantiate
+cpinst = top.insert(pya.CellInstArray(cpvar, ct))
+
+######### Draw grids.
+counter = 0
+for row in range(rows):
+  for col in range(cols):
+    x = (col - 0.5 * (cols-1))*dx
+    y = (-row + 0.5 * (rows-1))*dy
+    
+    #Conditions for subcells to exist: within radius. Check corners x&amp;y within radius.
+    r = wafer_diameter_um*1e3/2.0
+    x1 = x + GRD.bbox().width()/2
+    x2 = x - GRD.bbox().width()/2
+    y1 = y + GRD.bbox().height()/2
+    y2 = y - GRD.bbox().height()/2
+    c1 = math.sqrt(x1**2 + y1**2) &lt; r
+    c2 = math.sqrt(x1**2 + y2**2) &lt; r
+    c3 = math.sqrt(x2**2 + y1**2) &lt; r
+    c4 = math.sqrt(x2**2 + y2**2) &lt; r
+    
+    if c1 and c2 and c3 and c4:
+    
+      #Create instances of Alignment markers
+      inst = pya.CellInstArray(GRD.cell_index(), pya.Trans(pya.Point(x,y)))
+      top.insert(inst)
+      
+      #    #TEXT
+      #text_ij = ascii_uppercase[row] + "%2.2i" % col      #TextLabel
+      text_ij = "#%3.3i" % (counter)      #TextLabel
+      counter += 1
+      param = {
+        "layer":txt_layer,
+        "text":text_ij,
+        "mag": 80
+      }
+      #Generate defaults for all other parameters
+      pv = txt.get_parameters()
+      for p in pv:
+        if not p.name in param.keys():
+          param[p.name] = p.default
+          #print(p.name,p.default)
+      
+      #Make Cell
+      pvar = layout.add_pcell_variant(lib, txt.id(), param)
+      t = pya.Trans(pya.Trans.R0,x-0.3*dx,y+0.33*dy) #pya.Trans(pya.Trans.R90,0,30e3)
+      #instantiate
+      pinst = top.insert(pya.CellInstArray(pvar, t))
+    
+    
+#Properly fit area
+lv.zoom_fit()    
+  </text>
+</klayout-macro>
