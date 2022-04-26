@@ -1,2 +1,2 @@
 # ebl-marker-generator
-Scripting for EBL Aignment generation in Klayout
+Python scripting for EBL Aignment generation in Klayout
