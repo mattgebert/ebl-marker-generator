@@ -209,19 +209,29 @@ for row in range(brows):
     GRD.shapes(bbox_layer_ind).insert(pya.Box(x-0.5*bigx,y-0.5*bigy,x+0.5*bigx,y+0.5*bigy))
      
     # Create BOX Markers
-    for hcorner in [-0.5,0.5]:
-      for vcorner in [-0.5,0.5]:
-        for i in ix:	
-          for j in jy:			
-            xij = x - hcorner*(dx - 2*i)
-            yij = y - vcorner*(dy - 2*j)
-            # Get box corner coords
-            x1 = xij - 0.5 * bbox_len
-            x2 = xij + 0.5 * bbox_len
-            y1 = yij - 0.5 * bbox_len
-            y2 = yij + 0.5 * bbox_len
-            # Write box
-            GRD.shapes(big_layer_ind).insert(pya.Box(x1,y1,x2,y2)) #if layer obj.
+    for hc in range(2):
+      for vc in range(2):
+        for a in range(len(ix)):
+          for b in range(len(jy)):
+            if (hc == 1 and vc == 1 and row==brows-1 and col==0) or (
+            hc == 0 and vc == 1 and row==brows-1 and col==bcols-1) or (
+            hc == 1 and vc == 0 and row==0 and col==0) or (
+            hc == 0 and vc == 0 and row==0 and col==bcols-1):
+              ps = [-0.5,0.5]
+              hcorner = ps[hc]
+              vcorner = ps[vc]
+              i = ix[a]
+              j = jy[b]
+              # ....	
+              xij = x - hcorner*(dx - 2*i)
+              yij = y - vcorner*(dy - 2*j)
+              # Get box corner coords
+              x1 = xij - 0.5 * bbox_len
+              x2 = xij + 0.5 * bbox_len
+              y1 = yij - 0.5 * bbox_len
+              y2 = yij + 0.5 * bbox_len
+              # Write box
+              GRD.shapes(big_layer_ind).insert(pya.Box(x1,y1,x2,y2)) #if layer obj.
     
 #Properly fit area
 lv.zoom_fit()    
