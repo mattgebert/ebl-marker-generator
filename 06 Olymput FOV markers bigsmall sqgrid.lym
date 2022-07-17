@@ -63,6 +63,11 @@ if ENSURE_ODD:
   # Add layer for arrows
   arr_layer_ind = layout.insert_layer(pya.LayerInfo().new(4,0,"arrows"))
   arr_layer = pya.LayerInfo(4,0)
+# Add extra layer for big alignment pads
+big_layer_ind = layout.insert_layer(pya.LayerInfo().new(5,0,"bmarkers"))
+big_layer = pya.LayerInfo(5,0)
+bbox_layer_ind = layout.insert_layer(pya.LayerInfo().new(6,0,"bbounding"))
+bbox_layer = pya.LayerInfo(6,0)
 
 # Put layers in list:
 lv.add_missing_layers()
@@ -83,16 +88,12 @@ boundx = 125e3 #um
 boundy = 100e3 #um
 box_pad = 5e3 #um - from boundary to boxes
 box_len = 3e3 #um
-bigx = 1000e3
-bigy = 1000e3
 
+chipsize = 9000e3 #x &amp; y dimensions
 
 #Spacing allowed for 4.5mm chips with gold pads:
-rows = math.ceil(3000e3 / boundy)
-cols = math.ceil(3000e3 / boundx)
-
-brows = math.ceil(3000e3 / bigy)
-bcols = math.ceil(3000e3 / bigx)
+rows = math.ceil(chipsize / boundy)
+cols = math.ceil(chipsize / boundx)
 
 #Spacing allowed for 1cm chips
 #rows = math.ceil(10000e3 / boundy)
@@ -112,9 +113,6 @@ if ENSURE_ODD:
   if rows%2 == 0:
     rows -= 1
 
-#Write big alignment markers
-for row in range(brows):
-  for col in range(bcols):
 
 #Write text &amp; multiply cell
 for row in range(rows):
@@ -178,7 +176,52 @@ if ENSURE_ODD:
     GRD.shapes(arr_layer_ind).insert(parr)
     parrs.append(parr)
 
-  
+
+
+#large alignment markers
+bigx = 1000e3 #um = 8*boundx
+bigy = 1000e3 #um = 10*boundy
+bbox_len = 20e3 #um
+bbox_pad = 75e3 #um - from boundary to boxes
+bbox_pady = 150e3 #um - from boundary to boxes
+box_ys = 3 #number of boxes in ydir
+box_xs = 1 #number of boxes in xdir
+
+brows = math.ceil(chipsize / bigy)
+bcols = math.ceil(chipsize / bigx)
+
+#Write big alignment markers
+for row in range(brows):
+  for col in range(bcols):
+    x = (col - 0.5 * (bcols-1))*bigx
+    y = (-row + 0.5 * (brows-1))*bigy
+    
+    #calc
+    dx2 = bbox_pady #spacing between centre of boxes
+    dy2 = bbox_pady #spacing between centre of boxes
+    dx = bigx - bbox_len - 2*bbox_pad #spacing between sets of boxes
+    dy = bigy - bbox_len - 2*bbox_pad #spacing between sets of boxes
+    
+    ix = [(i)*dx2 for i in range(box_xs)]
+    jy = [(j)*dy2 for j in range(box_ys)]
+    
+    #Draw bounding box:
+    GRD.shapes(bbox_layer_ind).insert(pya.Box(x-0.5*bigx,y-0.5*bigy,x+0.5*bigx,y+0.5*bigy))
+     
+    # Create BOX Markers
+    for hcorner in [-0.5,0.5]:
+      for vcorner in [-0.5,0.5]:
+        for i in ix:	
+          for j in jy:			
+            xij = x - hcorner*(dx - 2*i)
+            yij = y - vcorner*(dy - 2*j)
+            # Get box corner coords
+            x1 = xij - 0.5 * bbox_len
+            x2 = xij + 0.5 * bbox_len
+            y1 = yij - 0.5 * bbox_len
+            y2 = yij + 0.5 * bbox_len
+            # Write box
+            GRD.shapes(big_layer_ind).insert(pya.Box(x1,y1,x2,y2)) #if layer obj.
     
 #Properly fit area
 lv.zoom_fit()    

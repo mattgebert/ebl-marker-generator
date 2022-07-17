@@ -67,7 +67,7 @@ txt=lib.layout().pcell_declaration("TEXT")
 #Specify grid
 rows = 1
 cols = 1
-boundx = 135 #um
+boundx = 125 #um
 boundy = 100 #um
 box_pad = 5 #um - from boundary to boxes
 box_len = 3 #um
