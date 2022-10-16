@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category>pymacros</category>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>python</interpreter>
+ <dsl-interpreter-name/>
+ <text>import pya
+import math
+from string import ascii_uppercase
+
+print("-----------------------------------")
+
+#INFO: To be run after using "generate_alignment_marker_base". Requires existance of certain layers/cells.
+
+ENSURE_ODD = True #Change rows/cols to ensure ODD alignment &amp; then draw arrows.
+
+# Get layout view, if no layout create one.
+lv = pya.LayoutView.current()
+
+# Get cell view, if not existing, then create one.
+cv = pya.CellView.active()
+layout = cv.layout()
+
+#Select "TOP" Cell
+top = layout.cell("TOP")
+Grid = layout.cell("Grid")
+PD = layout.cell("Pads and dicing")
+
+cv.cell = top
+
+wafer4in = 10.16e4 #um
+radius = wafer4in #boundary consideration length, set same as wafer4in as centre of boxes are considered.
+rows = math.floor((2*radius) / 4500)
+cols = rows
+
+boundx = 4500
+boundy = 4500
+
+#BOUNDING CIRCLE
+# Ensure there is a layer existing for a circle
+wafer_ind = layout.insert_layer(pya.LayerInfo().new(7,0,"wafer"))
+wafer_layer = pya.LayerInfo(7,0)
+lv.add_missing_layers()
+lv.layer = wafer_layer #select layer
+n = 200
+da = 2* math.pi / n
+r = wafer4in * 1e3
+circ_pts = [pya.Point(r*math.cos(i*da), r*math.sin(i*da)) for i in range(n)]
+circ = pya.Polygon(circ_pts)
+top.shapes(wafer_ind).insert(circ)
+
+#INSERTING OTHER CELLS
+for row in range(rows):
+  for col in range(cols):
+    x = (col - 0.5 * (cols-1))*boundx * 1e3
+    y = (-row + 0.5 * (rows-1))*boundy * 1e3
+    
+    #Create instances of Alignment markers &amp; pads
+    if not (x == 0 and y ==0):
+      if (x**2 + y**2 &lt; (radius * 1e3)**2):
+        inst1 = pya.CellInstArray(PD.cell_index(), pya.Trans(pya.Point(x,y)))
+        inst2 = pya.CellInstArray(Grid.cell_index(), pya.Trans(pya.Point(x,y)))
+        top.insert(inst1)
+        top.insert(inst2)</text>
+</klayout-macro>
